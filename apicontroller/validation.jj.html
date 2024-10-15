@@ -1,0 +1,70 @@
+const { body, validationResult } = require('express-validator');
+const userValidationRules = () => {
+    var rules = []
+    rules.push(
+        body('fullName').isString().notEmpty()
+    );
+
+    rules.push(
+        body('gender').isIn(['male','female']).isString().notEmpty()
+    );
+
+    rules.push(
+        body('userName').isString().notEmpty().isLength({min:6})
+    );
+
+    rules.push(
+        body('password').isString().notEmpty().isLength({min:8})
+    );
+
+    rules.push(
+        body('email').isEmail().notEmpty()
+    );
+
+    return rules
+}
+
+const errors = validationResult (req);
+    // if (!errors) {
+    //     return res.status(400).sent(err.sqlMessage);
+    // }
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+
+    // if (fullName === undefined) {
+        //     errors.push('fullName is missing');
+        // } else if (!isUpdate && typeof fullName !== 'string' || fullName.trim().length < 2) {
+        //     errors.push('fullName must be at least 2 characters');
+        // }
+    
+        if (!startDate || !endDate) {
+            return res.status(400).send('Start date and end date are required.');
+        }
+    
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+            return res.status(400).send('Invalid date format. Use YYYY-MM-DD.');
+        }
+    
+        try {
+            mysqlClient.query(
+                /*sql*/ `SELECT u.*, 
+                          DATE_FORMAT(u.createdAt, "%Y-%m-%d") AS createdAt,
+                          DATE_FORMAT(u.updatedAt, "%Y-%m-%d") AS updatedAt
+                          FROM user AS u 
+                          WHERE u.createdAt BETWEEN ? AND ? AND u.deletedAt IS NULL`,
+                [startDate, endDate],
+                (err, result) => {
+                    if (err) {
+                        console.error(err);
+                        return res.status(500).send(err.sqlMessage);
+                    }
+                    res.status(200).send(result);
+                }
+            );
+        } catch (error) {
+            console.error(error);
+            res.status(500).send(error);
+        }
