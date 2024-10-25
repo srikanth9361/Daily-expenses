@@ -25,7 +25,7 @@ function readUser(req, res) {
             if (err) {
                 res.status(500).send(err.sqlMessage)
             } else {
-                res.status(201).send(result)
+                res.status(200).send(result[0])
             }
         })
     } catch (error) {
@@ -192,6 +192,41 @@ function deleteUser(req, res) {
     }
 }
 
+function authentication(req, res) {
+    const mysqlClient = req.app.mysqlClient
+    const {
+        userName,
+        password
+    } = req.body
+
+    try {
+        mysqlClient.query(/*sql*/`SELECT * FROM user WHERE userName = ? AND password = ?`,
+            [userName, password], (err, result) => {
+
+                if (err || result.length === 0) {
+                    req.session.isLogged = false
+                    req.session.data = null
+                    res.status(409).send('Invalid userName or password')
+                } else {
+                    req.session.isLogged = true
+                    req.session.data = result[0]
+                    res.status(200).send('success')
+                }
+            })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+}
+
+function logOut (req, res) {
+    req.session.destroy((err) => {
+        if (err) console.log(err)
+            // logger.error()
+            res.redirect('http://localhost:1000/login')
+    })
+}
+
+
 function validateInsertItem(body) {
     const {
         fullName, gender, userName, password, email
@@ -263,7 +298,10 @@ module.exports = (app) => {
     app.get('/api/user', readUsers)
     app.get('/api/user/:id', readUser)
     // app.get('/api/user/report', generateDateReport)
+    app.post('/api/login', authentication)
     app.post('/api/user', insertUser)
+    app.get('/api/logout', logOut)
     app.put('/api/user/:id', updateUser)
     app.delete('/api/user/:id', deleteUser)
+
 }
