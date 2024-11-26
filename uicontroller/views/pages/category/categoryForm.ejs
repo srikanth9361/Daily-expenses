@@ -50,17 +50,18 @@
 
     if (id) {
         getCategoryById(id)
+
     }
 
     function getCategoryById(id) {
         const requestOptions = {
             method: "GET",
         };
-
+        console.log(id)
         fetch("http://localhost:1000/api/category/" + id, requestOptions)
             .then((response) => response.json())
             .then((category) => {
-                console.log(user.fullName)
+                console.log(category.categoryName)
                 categoryName.value = category.categoryName
 
             })

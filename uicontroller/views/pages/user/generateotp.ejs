@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OTP Generation</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    </style>
+    
 </head>
+
 <body>
-    <div class="container mt-5">
+    <div class="container mt-5" id="otp-page">
         <h2 class="text-center">Generate OTP</h2>
-        <form>
+        <form onsubmit="showOtpPage(event)">
             <div class="form-group">
                 <label for="email">Email address</label>
                 <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
@@ -17,6 +22,32 @@
             <button type="submit" class="btn btn-primary btn-block">Generate OTP</button>
         </form>
     </div>
+    <div class="container mt-5" id="otp-form-page" style="display: none;">
+        <h2 class="text-center">Verify OTP</h2>
+        <form>
+            <div class="form-group">
+                <label for="otp">OTP</label>
+                <input type="text" class="form-control" id="otp" placeholder="Enter OTP" required>
+            </div>
+            <div class="form-group">
+                <label for="password">New Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Enter new password" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Conform Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Enter conform password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Submit</button>
+        </form>
+    </div>
+    <script>
+        function showOtpPage(event) {
+            event.preventDefault();
+            document.getElementById("otp-page").style.display = "none";
+            document.getElementById("otp-form-page").style.display = "block";
+        }
+    </script>
+
 </body>
 
 </html>

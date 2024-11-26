@@ -10,57 +10,101 @@
 
     <style>
         body {
-            background-color: aquamarine;
+            background-color: #098aec;
+            font-family: Arial, sans-serif;
         }
 
-        .container {
-            max-width: 600px;
-            margin-top: 100px;
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        h2 {
-            margin-bottom: 40px;
+        .login-container h2 {
             text-align: center;
+            color: #333;
+            margin-bottom: 30px;
         }
 
-        button {
-            color: rgb(25, 31, 34);
+        .form-control {
+            border-radius: 5px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
         }
 
         .forgot-password {
-            margin-top: 20px;
-            text-align: center;
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        .forgot-password a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .text-center p {
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .text-center p a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .text-center p a:hover {
+            text-decoration: underline;
         }
     </style>
-
 </head>
 
 <body>
+
     <div class="container">
-        <h2>Login</h2>
-        <div class="mb-3 row">
-            <label for="userName" class="col-sm-2 col-form-label">User Name</label>
-            <div class="col-sm-10">
-                <input type="text" class="form-control" id="userName">
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label for="password" class="col-sm-2 col-form-label">Password</label>
-            <div class="col-sm-10">
-                <input type="password" class="form-control" id="password">
-            </div>
-        </div>
-        <button onclick="loginUser()">Submit</button>
-        <div>
-            <a href="/resetpassword" class="text-black text-decoration-none">Forgot Password?</a>
+        <div class="login-container">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="userName" class="form-label">User Name</label>
+                    <input type="text" class="form-control" id="userName" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+
+                <button onclick="loginUser()" class="btn btn-primary">Login</button>
+
+                <div class="forgot-password">
+                    <a href="/resetpassword">Forgot Password?</a>
+                </div>
+            </form>
         </div>
     </div>
-
 </body>
+
 <script>
     var userName = document.getElementById('userName');
     var password = document.getElementById('password');
-    
+
     function loginUser() {
         const myHeaders = new Headers();
         myHeaders.append("Content-Type", "application/json");
@@ -87,7 +131,6 @@
                 }
             });
     }
-
 
 </script>
 
