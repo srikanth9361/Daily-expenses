@@ -1,3 +1,16 @@
+const e = require('express');
+const { Result } = require('express-validator');
+const nodemailer = require('nodemailer');
+const otpGenerator = require('otp-generator');
+const OTP_LIMIT = 6;
+const OTP_OPTION = {
+    digits: true,
+    upperCaseAlphabets: true,
+    lowerCaseAlphabets: false,
+    specialChars: false
+};
+
+
 function readUsers(req, res) {
     const mysqlClient = req.app.mysqlClient
     try {
@@ -33,6 +46,26 @@ function readUser(req, res) {
         // console.log(error)
     }
 }
+
+function readUserIdAndUserName(req, res) {
+    const mysqlClient = req.app.mysqlClient
+
+    try {
+            mysqlClient.query(/*sql*/`SELECT userId, userName FROM user WHERE deletedAt IS NULL`,
+                (err, result) => {
+                    if (err) {
+                        console.log(err)
+                        res.status(500).send(err.sqlMessage)
+                    } else {
+                        res.status(201).send(result)
+                    }
+                })
+        } catch (error) {
+            res.status(500).send(error)
+            // console.log(error)
+        }
+    }
+
 
 function insertUser(req, res) {
     const mysqlClient = req.app.mysqlClient
@@ -218,11 +251,11 @@ function authentication(req, res) {
     }
 }
 
-function logOut (req, res) {
+function logOut(req, res) {
     req.session.destroy((err) => {
         if (err) console.log(err)
-            // logger.error()
-            res.redirect('http://localhost:1000/login')
+        // logger.error()
+        res.redirect('http://localhost:1000/login')
     })
 }
 
@@ -276,32 +309,228 @@ function validateInsertItem(body) {
     return errors
 }
 
-// function generateDateReport(req, res) {
+function generateOtp(req, res) {
+    const mysqlClient = req.app.mysqlClient;
+    const { email } = req.body;
+
+    try {
+        mysqlClient.query(/*sql*/`SELECT COUNT(*) AS count FROM user WHERE email = ? AND deletedAt IS NULL`,
+            [email], (err, result) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).send(err.sqlMessage);
+                }
+                if (result.length === 0) {
+                    return res.status(404).send({ message: 'No active user found with this email.' });
+                }
+
+
+                var otpCode = otpGenerator.generate(OTP_LIMIT, OTP_OPTION);
+
+                mysqlClient.query(/*sql*/`UPDATE user SET otp = ? WHERE email = ? AND deletedAt IS NULL`,
+                    [otpCode, email], (err, result) => {
+                        if (err) {
+                            console.error(err);
+                            return res.status(500).send(err.sqlMessage);
+                        }
+
+                        res.status(200).send({ message: 'OTP generated successfully' });
+                    });
+
+                var transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: 'srikanthmessii07@gmail.com',
+                        pass: 'qbse hqaj fnok bowi'
+                    }
+                });
+
+                var mailOptions = {
+                    from: 'srikanthmessii07@gmail.com',
+                    to: email,
+                    subject: 'Sending Email using Node.js',
+                    html: `${otpCode}`
+
+                };
+
+                transporter.sendMail(mailOptions, function (error, info) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                    }
+                });
+
+            })
+    } catch (error) {
+        console.error(error);
+        res.status(500).send(error);
+    }
+}
+
+// function processResetPassword(req, res) {
 //     const mysqlClient = req.app.mysqlClient;
-//     const { startDate, endDate } = req.query;
+//     const { email, otp, newPassword } = req.body;
+//     const otpAttemptMax = 3;
+//     console.log(email)
+
 //     try {
-//          mysqlClient.query(/*sql*/`SELECT * FROM user WHERE DATE >= ? AND DATE <= ?`,
-//             [startDate, endDate], (err, result) => {
+//         mysqlClient.query(/*sql*/`SELECT otp, otpAttempt FROM user WHERE email = ? AND deletedAt IS NULL`,
+//             [email], (err, result) => {
 //                 if (err) {
 //                     console.error(err);
 //                     return res.status(500).send(err.sqlMessage);
 //                 }
-//                 res.status(200).send(result);
-//             })
-//   } catch (error) {
+
+//                 if (result.length === 0) {
+//                     return res.status(404).send({ message: 'No active user found with this email.' });
+//                 }
+
+//                 const user = result[0];
+//                 const userOtp = user.otp;
+//                 const userOtpAttempt = user.otpAttempt;
+
+
+//                 if (userOtpAttempt >= otpAttemptMax) {
+//                     console.log(userOtpAttempt)
+//                     mysqlClient.query(/*sql*/`UPDATE user SET otp = NULL, otpAttempt = 0 WHERE email = ? AND deletedAt IS NULL`,
+//                         [email], (err, result) => {
+//                             if (err) {
+//                                 console.error(err);
+//                                 return res.status(500).send(err.sqlMessage);
+//                             }
+
+//                             return res.status(403).send({ message: 'Maximum OTP attempts reached. Please try again later.' })
+
+//                         });
+//                     return
+//                 }
+
+//                 if (userOtp !== otp) {
+//                     mysqlClient.query(/*sql*/`UPDATE user SET otpAttempt = otpAttempt + 1 WHERE email = ? AND deletedAt IS NULL`,
+//                         [email], (err, result) => {
+//                             if (err) {
+//                                 console.error(err);
+//                                 return res.status(500).send(err.sqlMessage);
+//                             }
+//                         });
+
+//                     return res.status(400).send({ message: 'Invalid OTP. Please try again.' });
+//                 }
+
+
+//                 mysqlClient.query(/*sql*/`UPDATE user SET password = ?, otp = NULL, otpAttempt = 0 WHERE email = ? AND deletedAt IS NULL`,
+//                     [newPassword, email], (err, result) => {
+//                         if (err) {
+//                             console.error(err);
+//                             return res.status(500).send(err.sqlMessage);
+//                         }
+//                         res.status(200).send({ message: 'Password reset successfully.' });
+//                     });
+//             });
+
+//     } catch (error) {
 //         console.error(error);
 //         res.status(500).send(error);
 //     }
 // }
+function processResetPassword(req, res) {
+    const mysqlClient = req.app.mysqlClient;
+    const { email, otp, newPassword } = req.body;
+    const otpAttemptMax = 3;
+    const otpCooldown = 30 * 60 * 1000;
+
+    console.log(email);
+
+    try {
+        mysqlClient.query(/*sql*/`SELECT otp, otpAttempt, otpTime FROM user WHERE email = ? AND deletedAt IS NULL`,
+            [email], (err, result) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).send(err.sqlMessage);
+                }
+
+                if (result.length === 0) {
+                    return res.status(404).send({ message: 'No active user found with this email.' });
+                }
+
+                const user = result[0];
+                const userOtp = user.otp;
+                const userOtpAttempt = user.otpAttempt;
+                const userOtpTime = user.otpTime ? new Date(user.otpTime) : null;
+                const currentTime = new Date();
+
+                if (userOtpAttempt >= otpAttemptMax) {
+                    if (userOtpTime && currentTime - userOtpTime < otpCooldown) {
+                        const remainingTime = otpCooldown - (currentTime - userOtpTime);
+                        const minutesLeft = Math.ceil(remainingTime / (1000 * 60)); 
+                        return res.status(403).send({ message: `Maximum OTP attempts reached. Please try again in ${minutesLeft} minute(s).` });
+                    }
+
+                    mysqlClient.query(/*sql*/`UPDATE user SET otp = NULL, otpAttempt = 0, otpTime = NULL WHERE email = ? AND deletedAt IS NULL`,
+                        [email], (err, result) => {
+                            if (err) {
+                                console.error(err);
+                                return res.status(500).send(err.sqlMessage);
+                            }
+
+                            return res.status(403).send({ message: 'Maximum OTP attempts reached. You can try again now.' });
+                        });
+                    return;
+                }
+
+                if (userOtp !== otp) {
+                    mysqlClient.query(/*sql*/`UPDATE user SET otpAttempt = otpAttempt + 1 WHERE email = ? AND deletedAt IS NULL`,
+                        [email], (err, result) => {
+                            if (err) {
+                                console.error(err);
+                                return res.status(500).send(err.sqlMessage);
+                            }
+                        });
+
+                    if (userOtpAttempt + 1 >= otpAttemptMax) {
+                        mysqlClient.query(/*sql*/`UPDATE user SET otpTime = CURRENT_TIMESTAMP WHERE email = ? AND deletedAt IS NULL`,
+                            [email], (err, result) => {
+                                if (err) {
+                                    console.error(err);
+                                    return res.status(500).send(err.sqlMessage);
+                                }
+                            });
+                    }
+
+                    return res.status(400).send({ message: 'Invalid OTP. Please try again.' });
+                }
+
+                mysqlClient.query(/*sql*/`UPDATE user SET password = ?, otp = NULL, otpAttempt = 0, otpTime = NULL WHERE email = ? AND deletedAt IS NULL`,
+                    [newPassword, email], (err, result) => {
+                        if (err) {
+                            console.error(err);
+                            return res.status(500).send(err.sqlMessage);
+                        }
+                        res.status(200).send({ message: 'Password reset successfully.' });
+                    });
+            });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send(error);
+    }
+}
+
+
 
 module.exports = (app) => {
+    app.get('/api/user/idandusername', readUserIdAndUserName)
+
+    app.put('/api/user/resetpassword', processResetPassword)
     app.get('/api/user', readUsers)
     app.get('/api/user/:id', readUser)
-    // app.get('/api/user/report', generateDateReport)
     app.post('/api/login', authentication)
     app.post('/api/user', insertUser)
     app.get('/api/logout', logOut)
     app.put('/api/user/:id', updateUser)
     app.delete('/api/user/:id', deleteUser)
+    app.post('/api/user/generateotp', generateOtp)
+
 
 }

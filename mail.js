@@ -1,24 +1,27 @@
 var nodemailer = require('nodemailer');
+const otpGenerator = require('otp-generator')
+
+ var otpCode = otpGenerator.generate(6, {digits: true, upperCaseAlphabets: true, lowerCaseAlphabets: false, specialChars: false  });
 
 var transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'srikanthmessii07@gmail.com',
-    pass: 'rjts xzlv dkej ryga'
+    pass: 'qbse hqaj fnok bowi'
   }
 });
 
 var mailOptions = {
   from: 'srikanthmessii07@gmail.com',
-  to: 'sreekanth7722@gmail.com',
+  to: 'srikanthmessii07@gmail.com',
   subject: 'Sending Email using Node.js',
-  html: '<h1>Hi Anna</h1> <p>Good afternoon</p>',
-  attachments: [
-    {
-        filename: 'read',
-        path: './readme.md'
-    }
-  ]
+  html: `${otpCode}`
+  // attachments: [
+  //   {
+  //       filename: 'read',
+  //       path: './readme.md'
+  //   }
+  // ]
   
 };
 

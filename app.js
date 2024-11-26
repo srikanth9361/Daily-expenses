@@ -36,23 +36,23 @@ app.mysqlClient = mysql.createConnection({
     password: 'root',
     database: 'dailyexpenses'
 })
-app.use((req, res, next) => {
-    if (req.originalUrl === '/api/login' || req.originalUrl === '/resetpassword') {
-        return next()
-    }
+// app.use((req, res, next) => {
+//     if (req.originalUrl === '/api/login' || req.originalUrl === '/resetpassword'|| req.originalUrl === '/api/user/generateotp' || req.originalUrl ===  '/api/user/resetpassword') {
+//         return next()
+//     }
 
-    if (req.originalUrl !== '/login') {
-        if (req.session.isLogged !== true) {
-            return res.status(401).redirect('http://localhost:1000/login')
-        }
-    } else {
-        if (req.session.isLogged === true) {
-            return res.status(200).redirect('http://localhost:1000/home')
-        }
-    }
-    return next()
-})
-//apicontroller
+//     if (req.originalUrl !== '/login') {
+//         if (req.session.isLogged !== true) {
+//             return res.status(401).redirect('http://localhost:1000/login')
+//         }
+//     } else {
+//         if (req.session.isLogged === true) {
+//             return res.status(200).redirect('http://localhost:1000/home')
+//         }
+//     }
+//     return next()
+// })
+// //apicontroller
 const user = require('./apicontroller/user.js')
 const category = require('./apicontroller/category.js')
 const expense = require('./apicontroller/expense.js')
@@ -62,6 +62,7 @@ const expense = require('./apicontroller/expense.js')
 const userUi = require('./ui/userui.js')
 const homeUi = require('./ui/homeui.js')
 const categoryUi = require('./ui/categoryui.js')
+const expenseUi = require('./ui/expenseui.js')
 
 
 app.mysqlClient.connect(function (err) {
@@ -77,6 +78,7 @@ app.mysqlClient.connect(function (err) {
         homeUi(app)
         userUi(app)
         categoryUi(app)
+        expenseUi(app)
 
 
         app.listen(1000, () => {

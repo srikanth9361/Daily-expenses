@@ -1,35 +1,21 @@
 function readExpenses(req, res) {
-    const mysqlClient = req.app.mysqlClient;
-    const limit = parseInt(req.query.limit);
-    const page = parseInt(req.query.page);
-    const offset = (page - 1) * limit;
-    console.log(typeof offset)
-
-    const orderBy = req.query.orderby;
-    const sort = req.query.sort
-
-
+    const mysqlClient = req.app.mysqlClient
     try {
-        mysqlClient.query(/*sql*/`
-            SELECT 
-                e.*, 
-                u.userName,
-                c.categoryName,
-                DATE_FORMAT(e.createdAt, "%y-%m-%D") AS createdAt,
-                DATE_FORMAT(e.updatedAt, "%y-%m-%D") AS updatedAt,
-                DATE_FORMAT(e.expenseDate, "%y-%M-%D") AS expenseDate
-            FROM 
-                expense AS e
-            LEFT JOIN 
-                user AS u ON u.userId = e.userId
-            LEFT JOIN 
-                category AS c ON c.id = e.categoryId
-            WHERE
-                e.deletedAt IS NULL
-            ORDER BY 
-                ${orderBy} ${sort}
-            LIMIT ? OFFSET  ?`, [limit, offset], (err, result) => {
-
+        mysqlClient.query(/*sql*/`SELECT 
+            e.*, 
+            u.userName,
+            c.categoryName,
+            DATE_FORMAT(e.createdAt, "%y-%m-%d") AS createdAt,
+            DATE_FORMAT(e.updatedAt, "%y-%m-%d") AS updatedAt,
+            DATE_FORMAT(e.expenseDate, "%y-%M-%d") AS expenseDate
+        FROM 
+            expense AS e
+        LEFT JOIN 
+            user AS u ON u.userId = e.userId
+        LEFT JOIN 
+            category AS c ON c.id = e.categoryId
+        WHERE
+            e.deletedAt IS NULL`, (err, result) => {
             if (err) {
                 return res.status(500).send(err.sqlMessage)
             } else {
@@ -37,8 +23,8 @@ function readExpenses(req, res) {
             }
         })
     } catch (error) {
-        console.log(error)
-        res.status(500).send(error.message)
+        res.status(500).send(error)
+        // console.log(error)
     }
 }
 
@@ -47,17 +33,26 @@ function readExpense(req, res) {
     const id = req.params.id
 
     try {
-        mysqlClient.query(/*sql*/`SELECT * FROM expense WHERE id = ?`, [id], (err, result) => {
+        mysqlClient.query(/*sql*/`SELECT e.*, 
+            u.userName,
+            c.categoryName
+        FROM expense AS e
+        LEFT JOIN 
+            user AS u ON u.userId = e.userId
+        LEFT JOIN 
+            category AS c ON c.id = e.categoryId
+         WHERE e.id = ? AND e.deletedAt IS NULL`, [id], (err, result) => {
             if (err) {
                 res.status(500).send(err.sqlMessage)
                 console.log(err)
             } else {
-                res.status(201).send(result)
+                res.status(200).send(result[0])
             }
         })
     } catch (error) {
+                 console.log(error)
+
         res.status(500).send(error)
-        // console.log(error)
     }
 }
 
@@ -175,12 +170,13 @@ function deleteExpense(req, res) {
 
 function validateInsertItem(body, isUpdate = false) {
     const {
-        userId , categoryId, amount, description, expenseDate, paymentMethod 
+        userId, categoryId, amount, description, expenseDate, paymentMethod
     } = body
     const errors = []
+    console.log(categoryId)
 
     if (userId !== undefined) {
-        if (typeof userId !== 'number' || userId <= 0) {
+        if (userId <= 0) {
             errors.push('userId must be a number');
         }
     } else if (!isUpdate) {
@@ -188,7 +184,7 @@ function validateInsertItem(body, isUpdate = false) {
     }
 
     if (categoryId !== undefined) {
-        if (typeof categoryId !== 'number' || userId <= 0) {
+        if (categoryId <= 0) {
             errors.push('categoryId must be a number');
         }
     } else if (!isUpdate) {
@@ -196,7 +192,7 @@ function validateInsertItem(body, isUpdate = false) {
     }
 
     if (amount !== undefined) {
-        if (typeof amount !== 'number' || amount <= 0) {
+        if (amount <= 0) {
             errors.push('amount must be a number');
         }
     } else if (!isUpdate) {
@@ -213,7 +209,7 @@ function validateInsertItem(body, isUpdate = false) {
 
     if (expenseDate !== undefined) {
         const date = new Date(expenseDate);
-        if (isNaN(date.getTime())) {  
+        if (isNaN(date.getTime())) {
             errors.push('expenseDate must be a valid date');
         }
     } else if (!isUpdate) {
@@ -227,13 +223,58 @@ function validateInsertItem(body, isUpdate = false) {
     } else if (!isUpdate) {
         errors.push('paymentMethod is missing')
     }
+    console.log(errors)
 
     return errors
+}
+
+function generateExpenseReport(req, res) {
+    const mysqlClient = req.app.mysqlClient
+    const { userId, startDate, endDate } = req.query
+
+    try {
+        const query = /*sql*/`
+            SELECT 
+                e.*,
+                e.userId, 
+                u.userName,
+                c.categoryName,
+                e.amount,
+                DATE_FORMAT(e.createdAt, "%y-%m-%d") AS createdAt,
+                DATE_FORMAT(e.updatedAt, "%y-%m-%d") AS updatedAt,
+                DATE_FORMAT(e.expenseDate, "%y-%m-%d") AS expenseDate
+            FROM 
+                expense AS e
+            LEFT JOIN 
+                user AS u ON u.userId = e.userId
+            LEFT JOIN 
+                category AS c ON c.id = e.categoryId
+            WHERE
+                e.userId = ? 
+                AND e.expenseDate BETWEEN ? AND ? 
+                AND e.deletedAt IS NULL
+            ORDER BY e.expenseDate ASC
+        `
+
+        mysqlClient.query(query, [userId, startDate, endDate], (err, result) => {
+            if (err) {
+                console.log(err)
+                return res.status(500).send(err.sqlMessage)
+            } else {
+                console.log(result)
+                return res.status(200).send(result)
+            }
+        })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send(error)
+    }
 }
 
 
 module.exports = (app) => {
     app.get('/api/expense', readExpenses)
+    app.get('/api/expense/report', generateExpenseReport)
     app.get('/api/expense/:id', readExpense)
     app.post('/api/expense', insertExpense)
     app.put('/api/expense/:id', updateExpense)

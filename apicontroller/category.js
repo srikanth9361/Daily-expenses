@@ -28,7 +28,7 @@ function readCategory(req, res) {
                 res.status(500).send(err.sqlMessage)
                 console.log(err)
             } else {
-                res.status(201).send(result)
+                res.status(201).send(result[0])
             }
         })
     } catch (error) {
@@ -93,7 +93,7 @@ function updateCategory(req, res) {
                     console.log(err)
                     res.status(500).send(err.sqlMessage)
                 } else {
-                    res.status(201).send(result)
+                    res.status(200).send(result)
                 }
             })
     } catch (error) {
