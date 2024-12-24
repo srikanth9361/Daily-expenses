@@ -75,6 +75,7 @@ function insertUser(req, res) {
 
     const isValidInsert = validateInsertItem(req.body)
     if (isValidInsert.length > 0) {
+        console.log(isValidInsert)
         return res.status(400).send(isValidInsert)
     }
 

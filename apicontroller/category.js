@@ -28,12 +28,13 @@ function readCategory(req, res) {
                 res.status(500).send(err.sqlMessage)
                 console.log(err)
             } else {
-                res.status(201).send(result[0])
+                res.status(200).send(result[0])
             }
         })
     } catch (error) {
+        console.log(error)
+
         res.status(500).send(error)
-        // console.log(error)
     }
 }
 

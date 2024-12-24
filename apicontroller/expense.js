@@ -35,18 +35,21 @@ function readExpense(req, res) {
     try {
         mysqlClient.query(/*sql*/`SELECT e.*, 
             u.userName,
-            c.categoryName
+            c.categoryName,
+            DATE_FORMAT(e.expenseDate, "%y-%M-%d") AS expenseDate
+
+            
         FROM expense AS e
         LEFT JOIN 
             user AS u ON u.userId = e.userId
         LEFT JOIN 
             category AS c ON c.id = e.categoryId
-         WHERE e.id = ? AND e.deletedAt IS NULL`, [id], (err, result) => {
+         WHERE u.userId = ?  AND e.deletedAt IS NULL`, [id], (err, result) => {
             if (err) {
                 res.status(500).send(err.sqlMessage)
                 console.log(err)
             } else {
-                res.status(200).send(result[0])
+                res.status(200).send(result)
             }
         })
     } catch (error) {
@@ -228,12 +231,55 @@ function validateInsertItem(body, isUpdate = false) {
     return errors
 }
 
-function generateExpenseReport(req, res) {
-    const mysqlClient = req.app.mysqlClient
-    const { userId, startDate, endDate } = req.query
+// function generateExpenseReport(req, res) {
+//     const mysqlClient = req.app.mysqlClient
+//     const { userId, startDate, endDate } = req.query
+    
+//     try {
+//         const query = /*sql*/`
+//             SELECT 
+//                 e.*,
+//                 e.userId, 
+//                 u.userName,
+//                 c.categoryName,
+//                 e.amount,
+//                 DATE_FORMAT(e.createdAt, "%y-%m-%d") AS createdAt,
+//                 DATE_FORMAT(e.updatedAt, "%y-%m-%d") AS updatedAt,
+//                 DATE_FORMAT(e.expenseDate, "%y-%m-%d") AS expenseDate
+//             FROM 
+//                 expense AS e
+//             LEFT JOIN 
+//                 user AS u ON u.userId = e.userId
+//             LEFT JOIN 
+//                 category AS c ON c.id = e.categoryId
+//             WHERE
+//                 e.userId = ? 
+//                 AND e.expenseDate BETWEEN ? AND ? 
+//                 AND e.deletedAt IS NULL
+//             ORDER BY e.expenseDate ASC
+//         `
 
+//         mysqlClient.query(query, [userId, startDate, endDate], (err, result) => {
+//             if (err) {
+//                 console.log(err)
+//                 return res.status(500).send(err.sqlMessage)
+//             } else {
+//                 console.log(result)
+//                 return res.status(200).send(result)
+//             }
+//         })
+//     } catch (error) {
+//         console.log(error)
+//         res.status(500).send(error)
+//     }
+// }
+
+function generateExpenseReport(req, res) {
+    const mysqlClient = req.app.mysqlClient;
+    const { userId, startDate, endDate } = req.query;
+    
     try {
-        const query = /*sql*/`
+        let query = /*sql*/ `
             SELECT 
                 e.*,
                 e.userId, 
@@ -250,27 +296,36 @@ function generateExpenseReport(req, res) {
             LEFT JOIN 
                 category AS c ON c.id = e.categoryId
             WHERE
-                e.userId = ? 
-                AND e.expenseDate BETWEEN ? AND ? 
-                AND e.deletedAt IS NULL
-            ORDER BY e.expenseDate ASC
-        `
+                e.deletedAt IS NULL
+        `;
+        
+        const queryParams = [];
+        
+        if (userId) {
+            query += " AND e.userId = ?";
+            queryParams.push(userId);
+        }
+        if (startDate && endDate) {
+            query += " AND e.expenseDate BETWEEN ? AND ?";
+            queryParams.push(startDate, endDate);
+        }
 
-        mysqlClient.query(query, [userId, startDate, endDate], (err, result) => {
+        query += " ORDER BY e.expenseDate ASC";
+
+        mysqlClient.query(query, queryParams, (err, result) => {
             if (err) {
-                console.log(err)
-                return res.status(500).send(err.sqlMessage)
+                console.log(err);
+                return res.status(500).send(err.sqlMessage);
             } else {
-                console.log(result)
-                return res.status(200).send(result)
+                console.log(result);
+                return res.status(200).send(result);
             }
-        })
+        });
     } catch (error) {
-        console.log(error)
-        res.status(500).send(error)
+        console.log(error);
+        res.status(500).send(error);
     }
 }
-
 
 module.exports = (app) => {
     app.get('/api/expense', readExpenses)
