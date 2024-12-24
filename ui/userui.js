@@ -6,6 +6,10 @@ function generateotp (req , res) {
     res.render ('pages/user/generateotp.ejs')
 }
 
+function signin (req , res) {
+    res.render ('pages/user/signin.ejs')
+}
+
 
 function addUserUi(req, res) {
     res.render('pages/user/userform.ejs', { userId : ''})
@@ -26,6 +30,7 @@ module.exports = (app) => {
     app.get('/user/add', addUserUi)
     app.get('/user/:userId', editUserUi)
     app.get('/resetpassword', generateotp)
+    app.get('/signin', signin)
 }
 
 

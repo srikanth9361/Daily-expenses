@@ -1,5 +1,8 @@
 function readExpenseUi(req, res) {
-    res.render('pages/expense/expenselist.ejs')
+    const userId = req.session.data.userId
+    res.render('pages/expense/expenselist.ejs', {
+        userId: userId
+    })
 }
 
 function addExpenseUi(req, res) {
@@ -8,8 +11,8 @@ function addExpenseUi(req, res) {
 
 function editExpenseUi(req, res) {
     const id = req.params.id;
-
-    res.render('pages/expense/expenseform.ejs', { id: id})
+    console.log(id)
+    res.render('pages/expense/expenseform.ejs', {id})
 }
 
 function readExpenseReportUi(req , res) {
