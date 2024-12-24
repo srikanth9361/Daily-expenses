@@ -36,23 +36,65 @@ app.mysqlClient = mysql.createConnection({
     password: 'root',
     database: 'dailyexpenses'
 })
-// app.use((req, res, next) => {
-//     if (req.originalUrl === '/api/login' || req.originalUrl === '/resetpassword'|| req.originalUrl === '/api/user/generateotp' || req.originalUrl ===  '/api/user/resetpassword') {
-//         return next()
-//     }
 
-//     if (req.originalUrl !== '/login') {
-//         if (req.session.isLogged !== true) {
-//             return res.status(401).redirect('http://localhost:1000/login')
-//         }
+// Express route to get logged-in user data
+app.get('/api/user/me', (req, res) => {
+    if (req.session && req.session.isLogged && req.session.data) {
+        res.status(200).json(req.session.data);
+    } else {
+        res.status(401).send('User not logged in');
+    }
+});
+
+// app.get('/api/expense', (req, res) => {
+//     const userId = req.query.userId;  // Get the logged-in user ID from the query parameter
+//     // Fetch the expenses for the specific user
+//     Expense.find({ userId: userId })
+//         .then(expenses => {
+//             res.json(expenses);
+//         })
+//         .catch(err => {
+//             res.status(500).send(err);
+//         });
+// });
+
+
+// app.get('/api/expense/me', (req, res) => {
+//     if (req.session && req.session.isLogged && req.session.data) {
+//         // Send back the logged-in user's data
+//         res.status(200).json(req.session.data);
 //     } else {
-//         if (req.session.isLogged === true) {
-//             return res.status(200).redirect('http://localhost:1000/home')
-//         }
+//         res.status(401).send('User not logged in');
 //     }
-//     return next()
-// })
-// //apicontroller
+// });
+
+
+const userSessionExclude = [
+    '/api/login',
+    '/resetpassword',
+    '/api/user/generateotp',
+    '/api/user/resetpassword',
+    '/signin',
+    '/api/user'
+
+]
+app.use((req, res, next) => {
+    if (userSessionExclude.includes(req.originalUrl)) {
+        return next()
+    }
+
+    if (req.originalUrl !== '/login') {
+        if (req.session.isLogged !== true) {
+            return res.status(401).redirect('http://localhost:1000/login')
+        }
+    } else {
+        if (req.session.isLogged === true) {
+            return res.status(200).redirect('http://localhost:1000/home')
+        }
+    }
+    return next()
+})
+//apicontroller
 const user = require('./apicontroller/user.js')
 const category = require('./apicontroller/category.js')
 const expense = require('./apicontroller/expense.js')
